@@ -1,0 +1,265 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "applicationGateways_AppGW_name": {
+            "defaultValue": "AppGW",
+            "type": "String"
+        },
+        "virtualNetworks_vnet_lab05_dl_externalid": {
+            "defaultValue": "/subscriptions/110c9d6c-c601-4666-9f17-8aab8080d6a9/resourceGroups/rg-lab05-dl/providers/Microsoft.Network/virtualNetworks/vnet-lab05-dl",
+            "type": "String"
+        },
+        "publicIPAddresses_lab05_gatewayip_externalid": {
+            "defaultValue": "/subscriptions/110c9d6c-c601-4666-9f17-8aab8080d6a9/resourceGroups/rg-lab05-dl/providers/Microsoft.Network/publicIPAddresses/lab05-gatewayip",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Network/applicationGateways",
+            "apiVersion": "2024-07-01",
+            "name": "[parameters('applicationGateways_AppGW_name')]",
+            "location": "eastus2",
+            "zones": [
+                "1",
+                "2",
+                "3"
+            ],
+            "properties": {
+                "sku": {
+                    "name": "Standard_v2",
+                    "tier": "Standard_v2",
+                    "family": "Generation_1"
+                },
+                "gatewayIPConfigurations": [
+                    {
+                        "name": "appGatewayIpConfig",
+                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_AppGW_name')), '/gatewayIPConfigurations/appGatewayIpConfig')]",
+                        "properties": {
+                            "subnet": {
+                                "id": "[concat(parameters('virtualNetworks_vnet_lab05_dl_externalid'), '/subnets/snet-appgw')]"
+                            }
+                        }
+                    }
+                ],
+                "sslCertificates": [],
+                "trustedRootCertificates": [],
+                "trustedClientCertificates": [],
+                "sslProfiles": [],
+                "frontendIPConfigurations": [
+                    {
+                        "name": "appGwPublicFrontendIpIPv4",
+                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_AppGW_name')), '/frontendIPConfigurations/appGwPublicFrontendIpIPv4')]",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIPAddress": {
+                                "id": "[parameters('publicIPAddresses_lab05_gatewayip_externalid')]"
+                            }
+                        }
+                    }
+                ],
+                "frontendPorts": [
+                    {
+                        "name": "port_80",
+                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_AppGW_name')), '/frontendPorts/port_80')]",
+                        "properties": {
+                            "port": 80
+                        }
+                    }
+                ],
+                "backendAddressPools": [
+                    {
+                        "name": "pool-images",
+                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_AppGW_name')), '/backendAddressPools/pool-images')]",
+                        "properties": {
+                            "backendAddresses": []
+                        }
+                    },
+                    {
+                        "name": "pool-videos",
+                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_AppGW_name')), '/backendAddressPools/pool-videos')]",
+                        "properties": {
+                            "backendAddresses": []
+                        }
+                    }
+                ],
+                "loadDistributionPolicies": [],
+                "backendHttpSettingsCollection": [
+                    {
+                        "name": "http-80",
+                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_AppGW_name')), '/backendHttpSettingsCollection/http-80')]",
+                        "properties": {
+                            "port": 80,
+                            "protocol": "Http",
+                            "cookieBasedAffinity": "Disabled",
+                            "pickHostNameFromBackendAddress": false,
+                            "requestTimeout": 20,
+                            "probe": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_AppGW_name')), '/probes/probe-health')]"
+                            }
+                        }
+                    }
+                ],
+                "backendSettingsCollection": [],
+                "httpListeners": [
+                    {
+                        "name": "listener-http",
+                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_AppGW_name')), '/httpListeners/listener-http')]",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_AppGW_name')), '/frontendIPConfigurations/appGwPublicFrontendIpIPv4')]"
+                            },
+                            "frontendPort": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_AppGW_name')), '/frontendPorts/port_80')]"
+                            },
+                            "protocol": "Http",
+                            "hostNames": [],
+                            "requireServerNameIndication": false,
+                            "customErrorConfigurations": []
+                        }
+                    }
+                ],
+                "listeners": [],
+                "urlPathMaps": [
+                    {
+                        "name": "lab05-pathbasedrule",
+                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_AppGW_name')), '/urlPathMaps/lab05-pathbasedrule')]",
+                        "properties": {
+                            "defaultBackendAddressPool": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_AppGW_name')), '/backendAddressPools/pool-images')]"
+                            },
+                            "defaultBackendHttpSettings": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_AppGW_name')), '/backendHttpSettingsCollection/http-80')]"
+                            },
+                            "defaultRewriteRuleSet": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_AppGW_name')), '/rewriteRuleSets/rw-health')]"
+                            },
+                            "pathRules": [
+                                {
+                                    "name": "image-path",
+                                    "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_AppGW_name')), '/urlPathMaps/lab05-pathbasedrule/pathRules/image-path')]",
+                                    "properties": {
+                                        "paths": [
+                                            "/image/*"
+                                        ],
+                                        "backendAddressPool": {
+                                            "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_AppGW_name')), '/backendAddressPools/pool-images')]"
+                                        },
+                                        "backendHttpSettings": {
+                                            "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_AppGW_name')), '/backendHttpSettingsCollection/http-80')]"
+                                        },
+                                        "rewriteRuleSet": {
+                                            "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_AppGW_name')), '/rewriteRuleSets/rw-health')]"
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "video-path",
+                                    "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_AppGW_name')), '/urlPathMaps/lab05-pathbasedrule/pathRules/video-path')]",
+                                    "properties": {
+                                        "paths": [
+                                            "/video/*"
+                                        ],
+                                        "backendAddressPool": {
+                                            "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_AppGW_name')), '/backendAddressPools/pool-videos')]"
+                                        },
+                                        "backendHttpSettings": {
+                                            "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_AppGW_name')), '/backendHttpSettingsCollection/http-80')]"
+                                        },
+                                        "rewriteRuleSet": {
+                                            "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_AppGW_name')), '/rewriteRuleSets/rw-health')]"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "requestRoutingRules": [
+                    {
+                        "name": "lab05-pathbasedrule",
+                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_AppGW_name')), '/requestRoutingRules/lab05-pathbasedrule')]",
+                        "properties": {
+                            "ruleType": "PathBasedRouting",
+                            "priority": 100,
+                            "httpListener": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_AppGW_name')), '/httpListeners/listener-http')]"
+                            },
+                            "urlPathMap": {
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_AppGW_name')), '/urlPathMaps/lab05-pathbasedrule')]"
+                            }
+                        }
+                    }
+                ],
+                "routingRules": [],
+                "probes": [
+                    {
+                        "name": "probe-health",
+                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_AppGW_name')), '/probes/probe-health')]",
+                        "properties": {
+                            "protocol": "Http",
+                            "host": "127.0.0.1",
+                            "path": "/api/health",
+                            "interval": 30,
+                            "timeout": 30,
+                            "unhealthyThreshold": 3,
+                            "pickHostNameFromBackendHttpSettings": false,
+                            "minServers": 0,
+                            "match": {
+                                "statusCodes": [
+                                    "200-399"
+                                ]
+                            }
+                        }
+                    }
+                ],
+                "rewriteRuleSets": [
+                    {
+                        "name": "rw-health",
+                        "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('applicationGateways_AppGW_name')), '/rewriteRuleSets/rw-health')]",
+                        "properties": {
+                            "rewriteRules": [
+                                {
+                                    "ruleSequence": 100,
+                                    "conditions": [],
+                                    "name": "rw-image",
+                                    "actionSet": {
+                                        "requestHeaderConfigurations": [],
+                                        "responseHeaderConfigurations": [],
+                                        "urlConfiguration": {
+                                            "modifiedPath": "/api/health",
+                                            "reroute": false
+                                        }
+                                    }
+                                },
+                                {
+                                    "ruleSequence": 101,
+                                    "conditions": [],
+                                    "name": "rw-video",
+                                    "actionSet": {
+                                        "requestHeaderConfigurations": [],
+                                        "responseHeaderConfigurations": [],
+                                        "urlConfiguration": {
+                                            "modifiedPath": "/api/health",
+                                            "reroute": false
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "redirectConfigurations": [],
+                "privateLinkConfigurations": [],
+                "enableHttp2": true,
+                "enableFIPS": false,
+                "autoscaleConfiguration": {
+                    "minCapacity": 0,
+                    "maxCapacity": 10
+                }
+            }
+        }
+    ]
+}
